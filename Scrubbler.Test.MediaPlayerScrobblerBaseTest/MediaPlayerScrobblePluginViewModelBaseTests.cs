@@ -2,6 +2,8 @@
 using Scrubbler.MediaPlayerScrobblerBase;
 using Scrubbler.PluginBase;
 using Scrubbler.PluginBase.Discord;
+using Scrubbler.PluginBase.Plugin;
+using Scrubbler.PluginBase.Plugin.Account;
 using Scrubbler.PluginBase.Services;
 using Scrubbler.Plugins.Scrobblers.MediaPlayerScrobbleBase;
 using Shoegaze.LastFM;
@@ -133,6 +135,11 @@ public partial class MediaPlayerScrobblePluginViewModelBaseTests
       DiscordRichPresenceData rpData,
       ILogService logger) : MediaPlayerScrobblePluginViewModelBase(lastfmClient, discordRichPresence, rpData, logger)
   {
+    public string TrackName { get; set; } = string.Empty;
+
+    public string ArtistName { get; set; } = string.Empty;
+
+    public string AlbumName { get; set; } = string.Empty;
 
     // Expose the protected method for testing purposes.
     public void InvokeOnScrobblesDetected(IEnumerable<ScrobbleData> scrobbles)
@@ -140,10 +147,15 @@ public partial class MediaPlayerScrobblePluginViewModelBaseTests
       OnScrobblesDetected(scrobbles);
     }
 
+    public Task InvokeUpdateNowPlaying()
+    {
+      return UpdateNowPlaying();
+    }
+
     // Minimal implementations for abstract members:
-    public override string CurrentTrackName => string.Empty;
-    public override string CurrentArtistName => string.Empty;
-    public override string CurrentAlbumName => string.Empty;
+    public override string CurrentTrackName => TrackName;
+    public override string CurrentArtistName => ArtistName;
+    public override string CurrentAlbumName => AlbumName;
     public override int CurrentTrackLength => 0;
 
     protected override Task Connect()
@@ -157,5 +169,128 @@ public partial class MediaPlayerScrobblePluginViewModelBaseTests
     }
   }
   private const string ExpectedLoggerMessage = "Auto-connect is enabled. Attempting to connect...";
+
+  [Test]
+  public async Task UpdateNowPlaying_WithEmptyAlbum_CallsAccountFunctionWithNullAlbum()
+  {
+    var lastfmMock = new Mock<ILastfmClient>();
+    var discordRpMock = new Mock<IDiscordRichPresence>();
+    var loggerMock = new Mock<ILogService>();
+    var updateNowPlayingMock = new Mock<ICanUpdateNowPlaying>();
+    updateNowPlayingMock
+      .Setup(u => u.UpdateNowPlaying("Artist", "Track", null))
+      .ReturnsAsync((string?)null);
+
+    var vm = new TestableMediaPlayerScrobblePluginViewModel(
+      lastfmMock.Object,
+      discordRpMock.Object,
+      new DiscordRichPresenceData("large", "large text", "small", "small text"),
+      loggerMock.Object)
+    {
+      ArtistName = "Artist",
+      TrackName = "Track",
+      AlbumName = string.Empty,
+      UpdateNowPlayingObject = updateNowPlayingMock.Object
+    };
+
+    await vm.InvokeUpdateNowPlaying();
+
+    updateNowPlayingMock.Verify(u => u.UpdateNowPlaying("Artist", "Track", null), Times.Once);
+  }
+
+  [Test]
+  public async Task UpdatePlayCounts_WithEmptyAlbum_FetchesArtistAndTrackCountsOnly()
+  {
+    var lastfmMock = new Mock<ILastfmClient>();
+    var discordRpMock = new Mock<IDiscordRichPresence>();
+    var loggerMock = new Mock<ILogService>();
+    var accountMock = new Mock<IAccountPlugin>();
+    var playCountsMock = accountMock.As<ICanFetchPlayCounts>();
+    playCountsMock.Setup(p => p.GetArtistPlayCount("Artist")).ReturnsAsync((null, 2));
+    playCountsMock.Setup(p => p.GetTrackPlayCount("Artist", "Track")).ReturnsAsync((null, 3));
+
+    var vm = new TestableMediaPlayerScrobblePluginViewModel(
+      lastfmMock.Object,
+      discordRpMock.Object,
+      new DiscordRichPresenceData("large", "large text", "small", "small text"),
+      loggerMock.Object)
+    {
+      ArtistName = "Artist",
+      TrackName = "Track",
+      AlbumName = string.Empty,
+      FunctionContainer = new AccountFunctionContainer(accountMock.Object)
+    };
+
+    await InvokePrivateTask(vm, "UpdatePlayCounts");
+
+    using (Assert.EnterMultipleScope())
+    {
+      Assert.That(vm.CurrentArtistPlayCount, Is.EqualTo(2));
+      Assert.That(vm.CurrentTrackPlayCount, Is.EqualTo(3));
+      Assert.That(vm.CurrentAlbumPlayCount, Is.Zero);
+    }
+    playCountsMock.Verify(p => p.GetAlbumPlayCount(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+  }
+
+  [Test]
+  public async Task ToggleLovedState_WithEmptyAlbum_CallsAccountFunctionWithNullAlbum()
+  {
+    var lastfmMock = new Mock<ILastfmClient>();
+    var discordRpMock = new Mock<IDiscordRichPresence>();
+    var loggerMock = new Mock<ILogService>();
+    var accountMock = new Mock<IAccountPlugin>();
+    var loveTracksMock = accountMock.As<ICanLoveTracks>();
+    loveTracksMock
+      .Setup(l => l.SetLoveState("Artist", "Track", null, true))
+      .ReturnsAsync((string?)null);
+
+    var vm = new TestableMediaPlayerScrobblePluginViewModel(
+      lastfmMock.Object,
+      discordRpMock.Object,
+      new DiscordRichPresenceData("large", "large text", "small", "small text"),
+      loggerMock.Object)
+    {
+      ArtistName = "Artist",
+      TrackName = "Track",
+      AlbumName = string.Empty,
+      FunctionContainer = new AccountFunctionContainer(accountMock.Object)
+    };
+
+    await vm.ToggleLovedStateCommand.ExecuteAsync(null);
+
+    loveTracksMock.Verify(l => l.SetLoveState("Artist", "Track", null, true), Times.Once);
+  }
+
+  [Test]
+  public void GetBestImage_PrefersLargestKnownSize()
+  {
+    var small = new Uri("https://example.test/small.png");
+    var mega = new Uri("https://example.test/mega.png");
+    var images = new Dictionary<ImageSize, Uri>
+    {
+      [ImageSize.Small] = small,
+      [ImageSize.Mega] = mega
+    };
+
+    var result = InvokeGetBestImage(images);
+
+    Assert.That(result, Is.EqualTo(mega));
+  }
+
+  private static async Task InvokePrivateTask(MediaPlayerScrobblePluginViewModelBase vm, string methodName)
+  {
+    var method = typeof(MediaPlayerScrobblePluginViewModelBase).GetMethod(methodName, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+      ?? throw new MissingMethodException(nameof(MediaPlayerScrobblePluginViewModelBase), methodName);
+
+    await (Task)method.Invoke(vm, null)!;
+  }
+
+  private static Uri? InvokeGetBestImage(IReadOnlyDictionary<ImageSize, Uri> images)
+  {
+    var method = typeof(MediaPlayerScrobblePluginViewModelBase).GetMethod("GetBestImage", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+      ?? throw new MissingMethodException(nameof(MediaPlayerScrobblePluginViewModelBase), "GetBestImage");
+
+    return (Uri?)method.Invoke(null, [images]);
+  }
 
 }
