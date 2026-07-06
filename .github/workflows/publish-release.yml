@@ -201,7 +201,9 @@ jobs:
 
             git checkout -B "$BRANCH" "$DEFAULT_BRANCH"
 
-            python3 - "$PACKAGE_ID" "$VERSION" <<'PY' > changed-files.txt
+            CHANGED_FILES="$(mktemp)"
+
+            python3 - "$PACKAGE_ID" "$VERSION" <<'PY' > "$CHANGED_FILES"
           from pathlib import Path
           import re
           import sys
@@ -227,7 +229,7 @@ jobs:
               print(path.as_posix())
           PY
 
-            if [ ! -s changed-files.txt ]; then
+            if [ ! -s "$CHANGED_FILES" ]; then
               echo "No ${PACKAGE_ID} package version pin found; skipping"
               skipped=$((skipped+1))
               cd /
@@ -236,9 +238,12 @@ jobs:
             fi
 
             echo "Changed files:"
-            cat changed-files.txt
+            cat "$CHANGED_FILES"
 
-            git add -- .
+            while IFS= read -r changed_file
+            do
+              git add -- "$changed_file"
+            done < "$CHANGED_FILES"
 
             if git diff --cached --quiet; then
               echo "Already up to date."
