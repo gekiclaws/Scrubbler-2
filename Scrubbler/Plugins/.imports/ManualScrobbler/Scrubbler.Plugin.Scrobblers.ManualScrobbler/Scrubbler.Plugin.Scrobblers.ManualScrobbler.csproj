@@ -1,0 +1,32 @@
+<Project Sdk="Uno.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWinUI>true</UseWinUI>
+    <AssemblyVersion>1.2.0</AssemblyVersion>
+    <FileVersion>1.2.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="ManualScrobbleView.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Include="ManualScrobbleView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Scrubbler.PluginBase" Condition="'$(LocalPluginBaseProject)' == ''" />
+    <ProjectReference Include="$(LocalPluginBaseProject)" Condition="'$(LocalPluginBaseProject)' != ''" />
+  </ItemGroup>
+</Project>
