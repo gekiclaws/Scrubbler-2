@@ -31,7 +31,17 @@ internal sealed partial class FileParseScrobbleViewModel : ScrobbleMultipleTimeV
     public ScrobbleMode[] AvailableScrobbleModes { get; } = Enum.GetValues<ScrobbleMode>();
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsImportMode))]
     private ScrobbleMode _selectedScrobbleMode = ScrobbleMode.Import;
+
+    public bool IsImportMode => SelectedScrobbleMode == ScrobbleMode.Import;
+
+    public double ScrobbleGapSeconds
+    {
+        get => _scrobbleGapSeconds;
+        set => SetProperty(ref _scrobbleGapSeconds, NormalizeScrobbleGapSeconds(value));
+    }
+    private double _scrobbleGapSeconds;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ParseCommand))]
@@ -44,6 +54,8 @@ internal sealed partial class FileParseScrobbleViewModel : ScrobbleMultipleTimeV
     private readonly IFilePickerService _filePicker;
     private readonly IFileStorageService _fileStorageService;
     private static readonly string[] _textFiles = [".txt"];
+    private const double MinimumScrobbleGapSeconds = 1;
+    private const double MaximumScrobbleGapSeconds = 86400;
 
     #endregion Properties
 
@@ -51,12 +63,14 @@ internal sealed partial class FileParseScrobbleViewModel : ScrobbleMultipleTimeV
 
     public FileParseScrobbleViewModel(ILogService logService, IDialogService dialogService, IFilePickerService filePicker, IFileStorageService fileStorageService,
                                       IFileParser<CsvFileParserConfiguration> csvParser, CsvFileParserConfiguration csvConfig,
-                                      IFileParser<JsonFileParserConfiguration> jsonParser, JsonFileParserConfiguration jsonConfig)
+                                      IFileParser<JsonFileParserConfiguration> jsonParser, JsonFileParserConfiguration jsonConfig,
+                                      double scrobbleGapSeconds = PluginSettings.DefaultScrobbleGapSeconds)
     {
         _logService = logService;
         _dialogService = dialogService;
         _filePicker = filePicker;
         _fileStorageService = fileStorageService;
+        _scrobbleGapSeconds = NormalizeScrobbleGapSeconds(scrobbleGapSeconds);
 
         var parsers = new List<IFileParserViewModel>
         {
@@ -76,10 +90,35 @@ internal sealed partial class FileParseScrobbleViewModel : ScrobbleMultipleTimeV
         {
             var scrobbles = Scrobbles.Where(s => s.ToScrobble);
             if (SelectedScrobbleMode == ScrobbleMode.Import)
-                return ScrobbleData.FromMasterTimestamp(scrobbles, ScrobbleTimeVM.Timestamp, reverse: false);
+                return CreateImportScrobbles(scrobbles, ScrobbleTimeVM.Timestamp, ScrobbleGapSeconds);
             else
                 return scrobbles.Select(s => new ScrobbleData(s.TrackName, s.ArtistName, s.Timestamp) { Album = s.AlbumName, AlbumArtist = s.AlbumArtistName });
         });
+    }
+
+    internal static IEnumerable<ScrobbleData> CreateImportScrobbles(
+        IEnumerable<ParsedScrobbleViewModel> scrobbles,
+        DateTimeOffset masterTimestamp,
+        double scrobbleGapSeconds)
+    {
+        return ScrobbleData.FromMasterTimestamp(
+            scrobbles,
+            masterTimestamp,
+            reverse: false,
+            secondsToSubtract: GetScrobbleGapSeconds(scrobbleGapSeconds));
+    }
+
+    internal static int GetScrobbleGapSeconds(double scrobbleGapSeconds)
+    {
+        return (int)Math.Round(NormalizeScrobbleGapSeconds(scrobbleGapSeconds), MidpointRounding.AwayFromZero);
+    }
+
+    private static double NormalizeScrobbleGapSeconds(double scrobbleGapSeconds)
+    {
+        if (!double.IsFinite(scrobbleGapSeconds))
+            return PluginSettings.DefaultScrobbleGapSeconds;
+
+        return Math.Clamp(scrobbleGapSeconds, MinimumScrobbleGapSeconds, MaximumScrobbleGapSeconds);
     }
 
     [RelayCommand]

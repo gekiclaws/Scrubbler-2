@@ -49,8 +49,18 @@
             <Button Grid.Column="8" Content="Settings" Command="{Binding SelectedParser.OpenSettingsCommand}"/>
 
             <StackPanel Grid.Row="2" Grid.ColumnSpan="9" Orientation="Horizontal" Spacing="5">
-                <TextBlock Text="Scrobble Mode:" VerticalAlignment="Center"/>
-                <ComboBox Header="Scrobble Mode" HorizontalAlignment="Right" ItemsSource="{Binding AvailableScrobbleModes}" SelectedItem="{Binding SelectedScrobbleMode, Mode=TwoWay}"/> "
+                <ComboBox
+                    Header="Scrobble Mode"
+                    ItemsSource="{Binding AvailableScrobbleModes}"
+                    SelectedItem="{Binding SelectedScrobbleMode, Mode=TwoWay}"/>
+                <NumberBox
+                    Header="Gap between scrobbles (seconds)"
+                    Value="{Binding ScrobbleGapSeconds, Mode=TwoWay}"
+                    IsEnabled="{Binding IsImportMode}"
+                    Minimum="1"
+                    Maximum="86400"
+                    SmallChange="1"
+                    SpinButtonPlacementMode="Compact"/>
             </StackPanel>
         </Grid>
 

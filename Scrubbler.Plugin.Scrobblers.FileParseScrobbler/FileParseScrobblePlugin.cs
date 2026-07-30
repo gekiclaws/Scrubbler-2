@@ -44,7 +44,8 @@ public sealed class FileParseScrobblePlugin : PluginBase.Plugin.PluginBase, IScr
     {
         _vm ??= new FileParseScrobbleViewModel(_logService, _dialogService, _filePickerService, _fileStorageService,
                                                 new CsvFileParser(), _settings.CsvConfig,
-                                                new JsonFileParser(), _settings.JsonConfig);
+                                                new JsonFileParser(), _settings.JsonConfig,
+                                                _settings.ScrobbleGapSeconds);
 
         return _vm;
     }
@@ -65,6 +66,8 @@ public sealed class FileParseScrobblePlugin : PluginBase.Plugin.PluginBase, IScr
         var jsonParser = _vm?.AvailableParsers.OfType<JsonFileParserViewModel>().FirstOrDefault();
         if (jsonParser is not null)
             _settings.JsonConfig = jsonParser.Config;
+        if (_vm is not null)
+            _settings.ScrobbleGapSeconds = _vm.ScrobbleGapSeconds;
 
         await _settingsStore.SetAsync(Name, _settings);
     }
