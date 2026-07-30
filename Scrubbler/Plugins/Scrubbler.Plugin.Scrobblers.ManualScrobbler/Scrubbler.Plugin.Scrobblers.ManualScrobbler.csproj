@@ -26,7 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Scrubbler.PluginBase" Condition="'$(LocalPluginBaseProject)' == ''" />
-    <ProjectReference Include="$(LocalPluginBaseProject)" Condition="'$(LocalPluginBaseProject)' != ''" />
+    <ProjectReference Include="..\Scrubbler.PluginBase\Scrubbler.PluginBase.csproj" />
   </ItemGroup>
 </Project>

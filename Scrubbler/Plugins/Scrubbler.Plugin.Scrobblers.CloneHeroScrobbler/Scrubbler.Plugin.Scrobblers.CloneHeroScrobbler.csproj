@@ -1,6 +1,6 @@
 <Project Sdk="Uno.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <UnoSingleProject>true</UnoSingleProject>
     <OutputType>Library</OutputType>
     <GenerateLibraryLayout>true</GenerateLibraryLayout>
@@ -13,8 +13,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Scrubbler.MediaPlayerScrobblerBase" />
-    <PackageReference Include="Scrubbler.PluginBase" />
+    <ProjectReference Include="..\Scrubbler.MediaPlayerScrobblerBase\Scrubbler.MediaPlayerScrobblerBase.csproj" />
+    <ProjectReference Include="..\Scrubbler.PluginBase\Scrubbler.PluginBase.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,4 +38,3 @@
     </Page>
   </ItemGroup>
 </Project>
-

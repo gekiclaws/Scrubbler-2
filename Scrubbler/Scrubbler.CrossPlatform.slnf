@@ -1,0 +1,24 @@
+{
+  "solution": {
+    "path": "Scrubbler.sln",
+    "projects": [
+      "Plugins/Scrubbler.MediaPlayerScrobblerBase/Scrubbler.MediaPlayerScrobblerBase.csproj",
+      "Plugins/Scrubbler.Plugin.Accounts.LastFm/Scrubbler.Plugin.Accounts.LastFm.csproj",
+      "Plugins/Scrubbler.Plugin.Scrobblers.CloneHeroScrobbler/Scrubbler.Plugin.Scrobblers.CloneHeroScrobbler.csproj",
+      "Plugins/Scrubbler.Plugin.Scrobblers.DatabaseScrobbler/Scrubbler.Plugin.Scrobblers.DatabaseScrobbler.csproj",
+      "Plugins/Scrubbler.Plugin.Scrobblers.FileParseScrobbler/Scrubbler.Plugin.Scrobblers.FileParseScrobbler.csproj",
+      "Plugins/Scrubbler.Plugin.Scrobblers.FriendScrobbler/Scrubbler.Plugin.Scrobblers.FriendScrobbler.csproj",
+      "Plugins/Scrubbler.Plugin.Scrobblers.ManualScrobbler/Scrubbler.Plugin.Scrobblers.ManualScrobbler.csproj",
+      "Plugins/Scrubbler.PluginBase/Scrubbler.PluginBase.csproj",
+      "Plugins/Scrubbler.Test.CloneHeroScrobblerTest/Scrubbler.Test.CloneHeroScrobblerTest.csproj",
+      "Plugins/Scrubbler.Test.DatabaseScrobblerTest/Scrubbler.Test.DatabaseScrobblerTest.csproj",
+      "Plugins/Scrubbler.Test.FileParseScrobblerTest/Scrubbler.Test.FileParseScrobblerTest.csproj",
+      "Plugins/Scrubbler.Test.ManualScrobblerTest/Scrubbler.Test.ManualScrobblerTest.csproj",
+      "Plugins/Scrubbler.Test.MediaPlayerScrobblerBaseTest/Scrubbler.Test.MediaPlayerScrobblerBaseTest.csproj",
+      "Plugins/Scrubbler.Tests.PluginBaseTest/Scrubbler.Tests.PluginBaseTest.csproj",
+      "Scrubbler.Host/Scrubbler.Host.csproj",
+      "Scrubbler.Test/Scrubbler.Test.csproj",
+      "Scrubbler.Updater/Scrubbler.Updater.csproj"
+    ]
+  }
+}

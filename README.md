@@ -1,6 +1,6 @@
 # Scrubbler 2
 
-Scrubbler 2 is a plugin-based desktop app for fixing missing music scrobbles.
+Scrubbler 2 is a plugin-based desktop app for fixing missing music scrobbles. The host and all first-party plugin source now live in this repository, while plugins remain separate assemblies at runtime.
 
 If a player, service, or import workflow failed to submit your listens, Scrubbler gives you a place to authenticate your scrobble account, install the plugins you need, review what will be sent, and submit those scrobbles manually or automatically.
 
@@ -93,25 +93,42 @@ git submodule update --init --recursive
 
 ### Build
 
+On Linux or macOS, build the cross-platform solution filter:
+
 ```bash
 cd Scrubbler
-dotnet build -c Release
+dotnet build Scrubbler.CrossPlatform.slnf -c Release
+```
+
+On Windows, build the complete solution, including the Windows-only Apple Music plugin:
+
+```powershell
+cd Scrubbler
+dotnet build Scrubbler.sln -c Release
 ```
 
 ### Test
 
+Use the same solution or solution filter that you built:
+
 ```bash
 cd Scrubbler
-dotnet test -c Release --no-build
+dotnet test Scrubbler.CrossPlatform.slnf -c Release --no-build
 ```
 
 ### Run
 
-You can open `Scrubbler/Scrubbler.sln` in Visual Studio, or run the desktop target from the command line:
+On macOS, the root launcher builds the host and all compatible first-party plugins, copies the plugin outputs into `Scrubbler/DebugPlugins`, and starts the app in local-plugin mode:
+
+```bash
+./start-scrubbler-macos.command
+```
+
+You can also open `Scrubbler/Scrubbler.sln` in Visual Studio. For a direct command-line run, build the appropriate solution first and then run:
 
 ```bash
 cd Scrubbler
-dotnet run --project Scrubbler.Host/Scrubbler.Host.csproj -f net10.0-desktop
+dotnet run --project Scrubbler.Host/Scrubbler.Host.csproj -f net10.0-desktop --launch-profile "Local Plugins"
 ```
 
 ## Repository Layout
@@ -119,6 +136,10 @@ dotnet run --project Scrubbler.Host/Scrubbler.Host.csproj -f net10.0-desktop
 - `Scrubbler/Scrubbler.Host` - main desktop app
 - `Scrubbler/Scrubbler.Updater` - external updater used during in-place app updates
 - `Scrubbler/Scrubbler.Test` - automated tests
+- `Scrubbler/Plugins` - first-party plugin, shared base, and plugin test projects
+- `Scrubbler/DebugPlugins` - generated local plugin assemblies loaded by the development launch profile
+- `Scrubbler/Scrubbler.sln` - complete solution, including the Windows-only Apple Music plugin
+- `Scrubbler/Scrubbler.CrossPlatform.slnf` - Linux/macOS build and test view
 - `Scrubbler/deps` - submodule with shared dependencies and package version definitions
 
 ## License

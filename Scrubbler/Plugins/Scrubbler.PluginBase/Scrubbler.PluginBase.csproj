@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Uno.Sdk">
 
   <PropertyGroup>
-    <!-- Uno expects plural -->
-    <TargetFrameworks>net10.0</TargetFrameworks>
+    <!-- A single target avoids cross-targeting restore edges in the monorepo graph. -->
+    <TargetFramework>net10.0</TargetFramework>
 
     <!-- Enables Uno XAML codegen and build logic -->
     <UseUnoXaml>true</UseUnoXaml>
@@ -18,7 +18,7 @@
     <PackageId>Scrubbler.PluginBase</PackageId>
     <Authors>SHOEGAZEssb</Authors>
     <Description>Base abstractions for Scrubbler plugins.</Description>
-    <RepositoryUrl>https://github.com/Scrubbler-Dev/Scrubbler.PluginBase</RepositoryUrl>
+    <RepositoryUrl>https://github.com/SHOEGAZEssb/Scrubbler-2</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>

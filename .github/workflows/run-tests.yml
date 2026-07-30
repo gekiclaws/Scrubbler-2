@@ -8,7 +8,18 @@ on:
 
 jobs:
   run-tests:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Cross-platform
+            os: ubuntu-latest
+            solution: Scrubbler.CrossPlatform.slnf
+          - name: Windows-only plugins
+            os: windows-latest
+            solution: Scrubbler.sln
 
     steps:
       - name: Checkout
@@ -23,9 +34,9 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Build
-        run: dotnet build -c Release
+        run: dotnet build "${{ matrix.solution }}" -c Release
         working-directory: Scrubbler
 
       - name: Test
-        run: dotnet test -c Release --no-build --verbosity normal
+        run: dotnet test "${{ matrix.solution }}" -c Release --no-build --verbosity normal
         working-directory: Scrubbler

@@ -113,11 +113,10 @@
         <PackageReference Include="CommunityToolkit.WinUI.Extensions" />
         <PackageReference Include="DiscordRichPresence" />
         <PackageReference Include="Microsoft.Extensions.Http" />
-        <PackageReference Include="Scrubbler.PluginBase" Condition="'$(LocalPluginBaseProject)' == ''" />
         <PackageReference Include="SkiaSharp" />
     </ItemGroup>
-    <ItemGroup Condition="'$(LocalPluginBaseProject)' != ''">
-        <ProjectReference Include="$(LocalPluginBaseProject)" />
+    <ItemGroup>
+        <ProjectReference Include="..\Plugins\Scrubbler.PluginBase\Scrubbler.PluginBase.csproj" />
     </ItemGroup>
     <ItemGroup>
       <Page Update="Presentation\HomeView.xaml">

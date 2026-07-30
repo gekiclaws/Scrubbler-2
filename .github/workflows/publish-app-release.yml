@@ -18,12 +18,15 @@ jobs:
           - os: windows-latest
             rid: win-x64
             zip_name: Scrubbler-win-x64-${{ github.event.release.tag_name }}.zip
+            test_solution: Scrubbler.sln
           - os: ubuntu-latest
             rid: linux-x64
             zip_name: Scrubbler-linux-x64-${{ github.event.release.tag_name }}.zip
+            test_solution: Scrubbler.CrossPlatform.slnf
           - os: macos-latest
             rid: osx-x64
             zip_name: Scrubbler-osx-x64-${{ github.event.release.tag_name }}.zip
+            test_solution: Scrubbler.CrossPlatform.slnf
 
     steps:
       - name: Checkout
@@ -45,7 +48,7 @@ jobs:
           dotnet restore Scrubbler.Host/Scrubbler.Host.csproj -r ${{ matrix.rid }}
 
       - name: Test
-        run: dotnet test -c Release --verbosity normal
+        run: dotnet test "${{ matrix.test_solution }}" -c Release --verbosity normal
         working-directory: Scrubbler
 
       - name: Publish updater

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Uno.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0-windows</TargetFrameworks>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <UnoSingleProject>true</UnoSingleProject>
     <OutputType>Library</OutputType>
     <!-- Ensures the .xr.xml files are generated in a proper layout folder -->
@@ -16,8 +16,10 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FlaUI.UIA3" />
-    <PackageReference Include="Scrubbler.MediaPlayerScrobblerBase" />
-    <PackageReference Include="Scrubbler.PluginBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Scrubbler.MediaPlayerScrobblerBase\Scrubbler.MediaPlayerScrobblerBase.csproj" />
+    <ProjectReference Include="..\Scrubbler.PluginBase\Scrubbler.PluginBase.csproj" />
   </ItemGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">

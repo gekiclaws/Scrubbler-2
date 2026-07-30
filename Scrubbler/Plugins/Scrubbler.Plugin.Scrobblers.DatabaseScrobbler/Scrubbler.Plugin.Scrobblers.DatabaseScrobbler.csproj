@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Uno.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <UnoSingleProject>true</UnoSingleProject>
     <OutputType>Library</OutputType>
     <!-- Ensures the .xr.xml files are generated in a proper layout folder -->
@@ -15,10 +15,12 @@
     <FileVersion>1.1.0</FileVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Scrubbler.PluginBase" />
     <PackageReference Include="Shoegaze.LastFM" />
     <PackageReference Include="Uno.Microsoft.Xaml.Behaviors.WinUI.Managed" />
     <PackageReference Include="Uno.Microsoft.Xaml.Behaviors.Interactivity.WinUI" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Scrubbler.PluginBase\Scrubbler.PluginBase.csproj" />
   </ItemGroup>
 
   <ItemGroup>

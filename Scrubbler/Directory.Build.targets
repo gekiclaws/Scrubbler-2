@@ -1,3 +1,5 @@
 <Project>
-  <Import Project="deps/Scrubbler.Build.targets" />
+  <Import Project="deps/Scrubbler.Build.targets"
+          Condition="Exists('$(MSBuildProjectDirectory)\..\deps\global.json')" />
+  <Import Project="build/Scrubbler.Plugins.targets" />
 </Project>

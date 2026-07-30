@@ -9,8 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Scrubbler.PluginBase" />
     <PackageReference Include="Shoegaze.LastFM" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Scrubbler.PluginBase\Scrubbler.PluginBase.csproj" />
   </ItemGroup>
 
   <ItemGroup>
