@@ -1,0 +1,290 @@
+name: Publish NuGet (release)
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Derive version from tag
+        shell: bash
+        run: |
+          set -e
+
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+
+          if [[ "$version" == "$tag" ]]; then
+            echo "Tag must start with 'v' (e.g. v0.1.0-alpha.1). Got: $tag"
+            exit 1
+          fi
+
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "Using VERSION=$version"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore
+
+      - name: Test
+        run: dotnet test -c Release --no-build --verbosity normal
+
+      - name: Pack
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          mkdir -p artifacts
+
+          dotnet pack Scrubbler.MediaPlayerScrobblerBase/Scrubbler.MediaPlayerScrobblerBase.csproj \
+            -c Release \
+            /p:IsPackable=true \
+            /p:PackageVersion="${{ env.VERSION }}" \
+            /p:ContinuousIntegrationBuild=true \
+            -o artifacts \
+            --verbosity normal
+
+          echo "Contents of artifacts/:"
+          ls -la artifacts
+
+          echo "Searching for packages in workspace:"
+          find . -maxdepth 6 -type f \( -name "*.nupkg" -o -name "*.snupkg" \) -print
+
+      - name: Publish to NuGet.org
+        shell: bash
+        run: |
+          set -e
+          shopt -s nullglob
+
+          packages=(artifacts/*.nupkg)
+
+          if (( ${#packages[@]} == 0 )); then
+            echo "No .nupkg found in artifacts/. Aborting publish."
+            exit 1
+          fi
+
+          dotnet nuget push "${packages[@]}" \
+            --api-key "${{ secrets.NUGET_API_KEY }}" \
+            --source "https://api.nuget.org/v3/index.json" \
+            --skip-duplicate
+
+      - name: Upload packages to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+
+  bump-consumers:
+    needs: publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Derive version from tag
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+
+          if [[ "$version" == "$tag" ]]; then
+            echo "Tag must start with 'v' (e.g. v0.1.0-alpha.1). Got: $tag"
+            exit 1
+          fi
+
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "Using VERSION=$version"
+
+      - name: Validate consumer bump token
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.SCRUBBLER_PLUGINS_PAT }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "SCRUBBLER_PLUGINS_PAT secret is required to open consumer update PRs."
+            exit 1
+          fi
+
+      - name: Wait for NuGet package availability
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          package_url="https://api.nuget.org/v3-flatcontainer/scrubbler.mediaplayerscrobblerbase/${VERSION}/scrubbler.mediaplayerscrobblerbase.${VERSION}.nupkg"
+
+          for attempt in {1..30}; do
+            if curl --fail --silent --head "$package_url" >/dev/null; then
+              echo "Scrubbler.MediaPlayerScrobblerBase ${VERSION} is available on NuGet."
+              exit 0
+            fi
+
+            echo "NuGet package not visible yet (attempt ${attempt}/30)."
+            sleep 10
+          done
+
+          echo "Timed out waiting for Scrubbler.MediaPlayerScrobblerBase ${VERSION} on NuGet."
+          exit 1
+
+      - name: Bump consumers and open PRs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.SCRUBBLER_PLUGINS_PAT }}
+          OWNER: Scrubbler-Dev
+          PACKAGE_ID: Scrubbler.MediaPlayerScrobblerBase
+        run: |
+          set -euo pipefail
+
+          git config --global user.email "actions@github.com"
+          git config --global user.name "github-actions"
+
+          BRANCH="chore/bump-mediaplayerbase-${VERSION}"
+          TITLE="chore: bump ${PACKAGE_ID} to ${VERSION}"
+          BODY="This PR bumps ${PACKAGE_ID} to ${VERSION} after the NuGet package was published."
+
+          echo "Discovering repositories..."
+
+          gh repo list "$OWNER" --limit 500 \
+            --json name,isArchived,isFork,defaultBranchRef \
+            -q '.[] | select(.isArchived==false and .isFork==false) | [.name, .defaultBranchRef.name] | @tsv' \
+            > repos.txt
+
+          processed=0
+          updated=0
+          skipped=0
+          failed=0
+
+          while IFS=$'\t' read -r REPO DEFAULT_BRANCH
+          do
+            [ -n "$REPO" ] || continue
+            DEFAULT_BRANCH="${DEFAULT_BRANCH:-main}"
+
+            echo "======================================"
+            echo "Processing: $OWNER/$REPO"
+            echo "Default branch: $DEFAULT_BRANCH"
+            echo "======================================"
+
+            processed=$((processed+1))
+
+            WORKDIR="$(mktemp -d)"
+            if ! git clone "https://x-access-token:$GH_TOKEN@github.com/$OWNER/$REPO.git" "$WORKDIR"; then
+              echo "Clone failed"
+              failed=$((failed+1))
+              rm -rf "$WORKDIR"
+              continue
+            fi
+
+            cd "$WORKDIR"
+            git checkout "$DEFAULT_BRANCH"
+            git pull
+
+            git checkout -B "$BRANCH" "$DEFAULT_BRANCH"
+
+            CHANGED_FILES="$(mktemp)"
+
+            python3 - "$PACKAGE_ID" "$VERSION" <<'PY' > "$CHANGED_FILES"
+          from pathlib import Path
+          import re
+          import sys
+
+          package_id = sys.argv[1]
+          version = sys.argv[2]
+
+          pattern = re.compile(
+              rf'(<PackageVersion\s+Include="{re.escape(package_id)}"\s+Version=")[^"]+(")'
+          )
+
+          for path in Path(".").rglob("Directory.Packages.props"):
+              if "deps" in path.parts:
+                  continue
+
+              text = path.read_text(encoding="utf-8-sig")
+              updated, count = pattern.subn(rf"\g<1>{version}\2", text)
+
+              if count == 0:
+                  continue
+
+              path.write_text(updated, encoding="utf-8", newline="")
+              print(path.as_posix())
+          PY
+
+            if [ ! -s "$CHANGED_FILES" ]; then
+              echo "No ${PACKAGE_ID} package version pin found; skipping"
+              skipped=$((skipped+1))
+              cd /
+              rm -rf "$WORKDIR"
+              continue
+            fi
+
+            echo "Changed files:"
+            cat "$CHANGED_FILES"
+
+            while IFS= read -r changed_file
+            do
+              git add -- "$changed_file"
+            done < "$CHANGED_FILES"
+
+            if git diff --cached --quiet; then
+              echo "Already up to date."
+              skipped=$((skipped+1))
+              cd /
+              rm -rf "$WORKDIR"
+              continue
+            fi
+
+            git commit -m "$TITLE"
+            git push -u origin "$BRANCH" --force-with-lease
+
+            set +e
+            gh pr create \
+              --repo "$OWNER/$REPO" \
+              --head "$BRANCH" \
+              --base "$DEFAULT_BRANCH" \
+              --title "$TITLE" \
+              --body "$BODY"
+            pr_status=$?
+            set -e
+
+            if [ $pr_status -ne 0 ]; then
+              echo "PR likely already exists. Listing:"
+              gh pr list --repo "$OWNER/$REPO" --head "$BRANCH" --json number,title,url -q '.[] | "\(.number) \(.title) \(.url)"'
+            fi
+
+            updated=$((updated+1))
+
+            cd /
+            rm -rf "$WORKDIR"
+
+          done < repos.txt
+
+          echo "======================================"
+          echo "Processed: $processed"
+          echo "Updated:   $updated"
+          echo "Skipped:   $skipped"
+          echo "Failed:    $failed"
+          echo "======================================"
+
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
