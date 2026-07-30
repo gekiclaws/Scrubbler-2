@@ -13,9 +13,28 @@
 
     <Grid>
         <StackPanel Orientation="Horizontal" Spacing="5">
-            <DatePicker Date="{Binding Date, Mode=TwoWay}" IsEnabled="{Binding UseCurrentTime, Converter={StaticResource InverseBooleanConverter}}" />
-            <TimePicker Time="{Binding Time, Mode=TwoWay}" IsEnabled="{Binding UseCurrentTime, Converter={StaticResource InverseBooleanConverter}}"/>
-            <CheckBox Content="Use Current" IsChecked="{Binding UseCurrentTime, Mode=TwoWay}"/>
+            <DatePicker
+                Header="Date"
+                Date="{Binding Date, Mode=TwoWay}"
+                IsEnabled="{Binding UseCurrentTime, Converter={StaticResource InverseBooleanConverter}}" />
+            <TimePicker
+                Header="Time"
+                Time="{Binding HoursAndMinutes, Mode=TwoWay}"
+                IsEnabled="{Binding UseCurrentTime, Converter={StaticResource InverseBooleanConverter}}" />
+            <NumberBox
+                Header="Seconds"
+                Width="90"
+                Value="{Binding Seconds, Mode=TwoWay}"
+                IsEnabled="{Binding UseCurrentTime, Converter={StaticResource InverseBooleanConverter}}"
+                Minimum="0"
+                Maximum="59"
+                SmallChange="1"
+                SpinButtonPlacementMode="Compact" />
+            <CheckBox
+                Content="Use Current"
+                IsChecked="{Binding UseCurrentTime, Mode=TwoWay}"
+                VerticalAlignment="Bottom"
+                Margin="0,0,0,8" />
         </StackPanel>
     </Grid>
 </UserControl>

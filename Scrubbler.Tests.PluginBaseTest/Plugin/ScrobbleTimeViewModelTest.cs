@@ -21,15 +21,54 @@ internal class ScrobbleTimeViewModelTest
     [Test]
     public void DisablingUseCurrentTime_FreezesTime()
     {
-        var time = new FakeTimeProvider(DateTimeOffset.Parse("2025-01-01T10:00:00"));
+        var now = DateTimeOffset.Parse("2025-01-01T10:00:42.500");
+        var time = new FakeTimeProvider(now);
         using var vm = new ScrobbleTimeViewModel(time);
 
         vm.UseCurrentTime = false;
-        var frozen = vm.Time;
 
         time.Advance(TimeSpan.FromHours(1));
 
-        Assert.That(vm.Time, Is.EqualTo(frozen));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(vm.Date, Is.EqualTo(new DateTimeOffset(now.Date, now.Offset)));
+            Assert.That(vm.Time, Is.EqualTo(new TimeSpan(10, 0, 42)));
+        }
+    }
+
+    [Test]
+    public void HoursAndMinutesChange_PreservesSelectedSeconds()
+    {
+        using var vm = new ScrobbleTimeViewModel
+        {
+            UseCurrentTime = false,
+            Time = new TimeSpan(10, 15, 37)
+        };
+
+        vm.HoursAndMinutes = new TimeSpan(12, 30, 0);
+
+        Assert.That(vm.Time, Is.EqualTo(new TimeSpan(12, 30, 37)));
+    }
+
+    [Test]
+    public void SecondsChange_UpdatesTimestampToSelectedSecond()
+    {
+        using var vm = new ScrobbleTimeViewModel
+        {
+            UseCurrentTime = false,
+            Date = new DateTimeOffset(2024, 01, 01, 0, 0, 0, TimeSpan.Zero),
+            Time = new TimeSpan(12, 30, 0)
+        };
+
+        vm.Seconds = 37;
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(vm.Time, Is.EqualTo(new TimeSpan(12, 30, 37)));
+            Assert.That(
+                vm.Timestamp,
+                Is.EqualTo(new DateTimeOffset(2024, 01, 01, 12, 30, 37, TimeSpan.Zero)));
+        }
     }
 
     [Test]
