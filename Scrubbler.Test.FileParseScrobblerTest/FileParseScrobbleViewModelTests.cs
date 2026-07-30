@@ -20,7 +20,7 @@ internal sealed class FileParseScrobbleViewModelTests
     [Test]
     public void CreateImportScrobbles_customGap_spacesGeneratedTimestamps()
     {
-        var masterTimestamp = new DateTimeOffset(2026, 7, 30, 12, 0, 0, TimeSpan.Zero);
+        var masterTimestamp = new DateTimeOffset(2026, 7, 30, 12, 0, 37, TimeSpan.Zero);
         ParsedScrobbleViewModel[] parsedScrobbles =
         [
             CreateParsedScrobble("Track 1"),
