@@ -1,3 +1,0 @@
-<Project>
-  <Import Project="deps/Directory.Packages.props" />
-</Project>
