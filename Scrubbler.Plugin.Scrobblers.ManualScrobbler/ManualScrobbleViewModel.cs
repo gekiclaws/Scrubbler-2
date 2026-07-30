@@ -22,16 +22,31 @@ public partial class ManualScrobbleViewModel : ScrobblePluginViewModelBase
     [ObservableProperty]
     private string _albumArtistName = string.Empty;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanScrobble))]
-    private DateTimeOffset _playedAt = DateTimeOffset.Now;
-
-    [ObservableProperty]
-    private TimeSpan _playedAtTime = DateTimeOffset.Now.TimeOfDay;
-
     public override bool CanScrobble => !string.IsNullOrEmpty(ArtistName) && !string.IsNullOrEmpty(TrackName) && ScrobbleTimeVM.IsTimeValid;
 
     public ScrobbleTimeViewModel ScrobbleTimeVM { get; }
+
+    [Obsolete("Use ScrobbleTimeVM.Date instead.")]
+    public DateTimeOffset PlayedAt
+    {
+        get => ScrobbleTimeVM.Date;
+        set
+        {
+            ScrobbleTimeVM.UseCurrentTime = false;
+            ScrobbleTimeVM.Date = value.Date;
+        }
+    }
+
+    [Obsolete("Use ScrobbleTimeVM.Time instead.")]
+    public TimeSpan PlayedAtTime
+    {
+        get => ScrobbleTimeVM.Time;
+        set
+        {
+            ScrobbleTimeVM.UseCurrentTime = false;
+            ScrobbleTimeVM.Time = value;
+        }
+    }
 
     #endregion Properties
 
@@ -56,7 +71,7 @@ public partial class ManualScrobbleViewModel : ScrobblePluginViewModelBase
         {
             return await Task.Run(() =>
             {
-                return new[] { new ScrobbleData(TrackName, ArtistName, PlayedAt.Date, PlayedAtTime) { Album = AlbumName, AlbumArtist = AlbumArtistName} };
+                return new[] { new ScrobbleData(TrackName, ArtistName, ScrobbleTimeVM.Timestamp) { Album = AlbumName, AlbumArtist = AlbumArtistName } };
             });
         }
         finally

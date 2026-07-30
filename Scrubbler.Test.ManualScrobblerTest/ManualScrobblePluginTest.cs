@@ -5,18 +5,20 @@ namespace Scrubbler.Test.ManualScrobblerTest;
 public class Tests
 {
     [Test]
-    public async Task CreateScrobblesTest()
+    public async Task CreateScrobbles_UsesSelectedTimestampIncludingSeconds()
     {
-        var playedAt = DateTime.Now;
+        var now = DateTimeOffset.Now;
+        var playedAt = new DateTimeOffset(now.Year, now.Month, now.Day, now.Hour, now.Minute, 37, now.Offset);
         var vm = new ManualScrobbleViewModel
         {
             ArtistName = "Test Artist",
             TrackName = "Test Track",
             AlbumName = "Test Album",
-            AlbumArtistName = "Test Album Artist",
-            PlayedAt = playedAt,
-            PlayedAtTime = playedAt.TimeOfDay
+            AlbumArtistName = "Test Album Artist"
         };
+        vm.ScrobbleTimeVM.UseCurrentTime = false;
+        vm.ScrobbleTimeVM.Date = playedAt.Date;
+        vm.ScrobbleTimeVM.Time = playedAt.TimeOfDay;
 
         var scrobbles = await vm.GetScrobblesAsync();
 
@@ -28,20 +30,17 @@ public class Tests
             Assert.That(scrobble.Track, Is.EqualTo("Test Track"));
             Assert.That(scrobble.Album, Is.EqualTo("Test Album"));
             Assert.That(scrobble.AlbumArtist, Is.EqualTo("Test Album Artist"));
-            Assert.That(scrobble.Timestamp, Is.EqualTo(new DateTimeOffset(playedAt)));
+            Assert.That(scrobble.Timestamp, Is.EqualTo(playedAt));
         }
     }
 
     [Test]
     public void InvalidDataTest()
     {
-        var playedAt = DateTime.Now;
         var vm = new ManualScrobbleViewModel
         {
             ArtistName = "",
-            TrackName = "Test Track",
-            PlayedAt = playedAt,
-            PlayedAtTime = playedAt.TimeOfDay
+            TrackName = "Test Track"
         };
         Assert.ThrowsAsync<InvalidOperationException>(vm.GetScrobblesAsync);
         vm.ArtistName = "Test Artist";
@@ -65,15 +64,12 @@ public class Tests
     [Test]
     public async Task IsBusyTest()
     {
-        var playedAt = DateTime.Now;
         var vm = new ManualScrobbleViewModel
         {
             ArtistName = "Test Artist",
             TrackName = "Test Track",
             AlbumName = "Test Album",
-            AlbumArtistName = "Test Album Artist",
-            PlayedAt = playedAt,
-            PlayedAtTime = playedAt.TimeOfDay
+            AlbumArtistName = "Test Album Artist"
         };
 
         Assert.That(vm.IsBusy, Is.False);
