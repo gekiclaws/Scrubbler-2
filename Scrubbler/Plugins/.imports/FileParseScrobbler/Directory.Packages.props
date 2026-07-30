@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="deps/Directory.Packages.props" />
+
+  <ItemGroup>
+    <PackageVersion Include="Scrubbler.PluginBase" Version="1.2.1" />
+  </ItemGroup>
+</Project>
