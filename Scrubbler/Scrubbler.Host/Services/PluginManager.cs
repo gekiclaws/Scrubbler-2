@@ -266,9 +266,7 @@ internal class PluginManager : IPluginManager
         if (!Directory.Exists(directory))
             return;
 
-        var search = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-
-        foreach (var dll in Directory.EnumerateFiles(directory, "Scrubbler.Plugin.*.dll", search))
+        foreach (var dll in GetPluginAssemblyPaths(directory, _shadowRoot, recursive))
         {
             try
             {
@@ -310,6 +308,28 @@ internal class PluginManager : IPluginManager
                 _logService.Error($"Failed to load plugin from {dll}: {ex.Message}");
             }
         }
+    }
+
+    internal static IReadOnlyList<string> GetPluginAssemblyPaths(string directory, string shadowRoot, bool recursive)
+    {
+        var search = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+
+        // Materialize discovery before loading anything. Loading creates new DLLs in .shadow,
+        // and a lazy recursive enumeration can otherwise discover those copies as new plugins.
+        return Directory
+            .EnumerateFiles(directory, "Scrubbler.Plugin.*.dll", search)
+            .Where(path => !IsPathUnderDirectory(path, shadowRoot))
+            .ToArray();
+    }
+
+    private static bool IsPathUnderDirectory(string path, string directory)
+    {
+        var relativePath = Path.GetRelativePath(directory, path);
+
+        return !Path.IsPathRooted(relativePath)
+               && !relativePath.Equals("..", StringComparison.Ordinal)
+               && !relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+               && !relativePath.StartsWith($"..{Path.AltDirectorySeparatorChar}", StringComparison.Ordinal);
     }
 
     private async Task UnloadPlugin(InstalledPluginEntry entry)
