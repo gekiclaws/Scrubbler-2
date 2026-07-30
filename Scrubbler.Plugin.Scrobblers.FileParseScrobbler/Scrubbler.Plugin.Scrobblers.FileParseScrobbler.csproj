@@ -16,7 +16,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CsvHelper" />
-    <PackageReference Include="Scrubbler.PluginBase" />
+    <PackageReference Include="Scrubbler.PluginBase" Condition="'$(LocalPluginBaseProject)' == ''" />
+    <ProjectReference Include="$(LocalPluginBaseProject)" Condition="'$(LocalPluginBaseProject)' != ''" />
   </ItemGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
