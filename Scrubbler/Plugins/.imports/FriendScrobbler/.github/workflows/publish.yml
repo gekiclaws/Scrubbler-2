@@ -1,0 +1,17 @@
+name: Publish plugin to Scrubbler-Plugins repository
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    uses: Scrubbler-Dev/Scrubbler-Plugins/.github/workflows/publish-plugin-reusable.yml@main
+    with:
+      plugin_name: Scrubbler.Plugin.Scrobblers.FriendScrobbler
+      tfm: net10.0
+      inject_defaults: true
+      fail_on_unreplaced: true
+    secrets:
+      SCRUBBLER_PLUGINS_PAT: ${{ secrets.SCRUBBLER_PLUGINS_PAT }}
+      PLUGIN_DEFAULTS_INJECT: ${{ secrets.PLUGIN_DEFAULTS_INJECT }}
